@@ -32,39 +32,45 @@ class _GroceryListState extends State<GroceryList> {
     final url = Uri.https(
         'flutter-project-791a9-default-rtdb.asia-southeast1.firebasedatabase.app',
         'shopping-list.json');
-    final response = await http.get(url);
-
-    // Error handling with status Code greater than 400
-    if (response.statusCode >= 400) {
+    try {
+      final response = await http.get(url);
+      // Handle if there's no data.
+      // Firebase return a string of 'null' instead of just null.
+      if (response.body == 'null') {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      // Decode first and then loop the data.
+      final Map<String, dynamic> listData = json.decode(response.body);
+      final List<GroceryItem> loadedItems = [];
+      for (final item in listData.entries) {
+        // first where: find the first matching item that you found.
+        final category = categories.entries
+            .firstWhere(
+              (catItem) => catItem.value.title == item.value['category'],
+            )
+            .value;
+        loadedItems.add(
+          GroceryItem(
+            id: item.key,
+            name: item.value['name'],
+            quantity: item.value['quantity'],
+            category: category,
+          ),
+        );
+      }
       setState(() {
-        _error = "Failed to fetch data. Please try again later.";
+        _groceryItems = loadedItems;
+        _isLoading = false;
+      });
+    } catch (error) {
+      // throw an error if there's no connection or something is wrong.
+      setState(() {
+        _error = "Something went wrong. Please try again later.";
       });
     }
-
-    // decode first and then loop the data.
-    final Map<String, dynamic> listData = json.decode(response.body);
-    final List<GroceryItem> loadedItems = [];
-    for (final item in listData.entries) {
-      // first where: find the first matching item that you found.
-      final category = categories.entries
-          .firstWhere(
-            (catItem) => catItem.value.title == item.value['category'],
-          )
-          .value;
-
-      loadedItems.add(
-        GroceryItem(
-          id: item.key,
-          name: item.value['name'],
-          quantity: item.value['quantity'],
-          category: category,
-        ),
-      );
-    }
-    setState(() {
-      _groceryItems = loadedItems;
-      _isLoading = false;
-    });
   }
 
 // ADD ITEM
