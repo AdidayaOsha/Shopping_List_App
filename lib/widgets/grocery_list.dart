@@ -18,6 +18,7 @@ class _GroceryListState extends State<GroceryList> {
 // if you already have type anotation, you don't have to set var again.
   List<GroceryItem> _groceryItems = [];
   var _isLoading = true;
+  String? _error;
 
 // INITIALIZE
   @override
@@ -30,6 +31,13 @@ class _GroceryListState extends State<GroceryList> {
   void _loadItems() async {
     final url = Uri.https('flutter-project-791a9-default-rtdb.asia-southeast1.firebasedatabase.app', 'shopping-list.json');
     final response = await http.get(url);
+
+    // Error handling with status Code greater than 400
+    if (response.statusCode >= 400) {
+      setState(() {
+        _error = "Failed to fetch data. Please try again later.";
+      });
+    }
 
     // decode first and then loop the data.
     final Map<String, dynamic> listData = json.decode(response.body);
@@ -117,6 +125,10 @@ class _GroceryListState extends State<GroceryList> {
           ),
         ),
       );
+    }
+
+    if (_error != null) {
+      content = Center(child: Text(_error!),);
     }
 
     return Scaffold(
